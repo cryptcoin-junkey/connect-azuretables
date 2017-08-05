@@ -31,7 +31,7 @@ mockAzureStorage.TableQuery = function() {
 };
 mockery.registerMock('azure-storage', mockAzureStorage);
 
-var AzureTablesStoreFactory;
+var AzureTablesStore;
 
 beforeEach(function() {
 
@@ -41,7 +41,7 @@ beforeEach(function() {
         warnOnReplace: false
     });
 
-    AzureTablesStoreFactory = require(moduleUnderTest)(session);
+    AzureTablesStore = require(moduleUnderTest)(session);
 
 });
 
@@ -56,7 +56,7 @@ describe('initialisation tests: ', function() {
     it('should inherit from the session Store', function() {
 
         var options = { storageAccount: 'account', accessKey: 'key' };
-        expect(AzureTablesStoreFactory.create(options) instanceof session.Store).toBe(true);
+        expect(new AzureTablesStore(options) instanceof session.Store).toBe(true);
 
     });
 
@@ -64,7 +64,7 @@ describe('initialisation tests: ', function() {
 
         var options = { storageAccount: 'account', accessKey: 'key' };
         spyOn(mockAzureStorage, 'createTableService').and.callThrough();
-        AzureTablesStoreFactory.create(options);
+        new AzureTablesStore(options);
         expect(mockAzureStorage.createTableService).toHaveBeenCalled();
         expect(mockAzureStorage.createTableService.calls.argsFor(0)).toEqual([options.storageAccount, options.accessKey]);
     });
@@ -74,7 +74,7 @@ describe('initialisation tests: ', function() {
         var options = { storageAccount: 'account', accessKey: 'key' };
         process.env.AZURE_STORAGE_CONNECTION_STRING = 'connection string';
         spyOn(mockAzureStorage, 'createTableService').and.callThrough();
-        AzureTablesStoreFactory.create(options);
+        new AzureTablesStore(options);
         expect(mockAzureStorage.createTableService).toHaveBeenCalled();
         expect(mockAzureStorage.createTableService.calls.argsFor(0)).toEqual([]);
     });
@@ -84,7 +84,7 @@ describe('initialisation tests: ', function() {
         process.env.AZURE_STORAGE_ACCOUNT = 'account';
         process.env.AZURE_STORAGE_ACCESS_KEY = 'key';
         spyOn(mockAzureStorage, 'createTableService').and.callThrough();
-        AzureTablesStoreFactory.create();
+        new AzureTablesStore();
         expect(mockAzureStorage.createTableService).toHaveBeenCalled();
         expect(mockAzureStorage.createTableService.calls.argsFor(0)).toEqual([]);
     });
@@ -93,7 +93,7 @@ describe('initialisation tests: ', function() {
 
         var options = { storageAccount: 'account', accessKey: 'key' };
         spyOn(mockTableService, 'createTableIfNotExists').and.callThrough();
-        AzureTablesStoreFactory.create(options);
+        new AzureTablesStore(options);
         expect(mockTableService.createTableIfNotExists).toHaveBeenCalled();
         expect(mockTableService.createTableIfNotExists.calls.argsFor(0)[0]).toEqual('ConnectAzureTablesSessions');
 
@@ -103,7 +103,7 @@ describe('initialisation tests: ', function() {
 
         var options = { storageAccount: 'account', accessKey: 'key', table: 'table' };
         spyOn(mockTableService, 'createTableIfNotExists').and.callThrough();
-        AzureTablesStoreFactory.create(options);
+        new AzureTablesStore(options);
         expect(mockTableService.createTableIfNotExists).toHaveBeenCalled();
         expect(mockTableService.createTableIfNotExists.calls.argsFor(0)[0]).toEqual('table');
 
@@ -119,7 +119,7 @@ describe('initialisation tests: ', function() {
         };
 
         spyOn(mockTableService, 'createTableIfNotExists').and.callThrough();
-        expect(function() { AzureTablesStoreFactory.create(options); }).toThrow();
+        expect(function() { new AzureTablesStore(options); }).toThrow();
         expect(mockTableService.createTableIfNotExists).toHaveBeenCalled();
 
     });
@@ -133,7 +133,7 @@ describe('initialisation tests: ', function() {
         };
 
         spyOn(mockTableService, 'createTableIfNotExists').and.callThrough();
-        expect(function() { AzureTablesStoreFactory.create(options); }).not.toThrow();
+        expect(function() { new AzureTablesStore(options); }).not.toThrow();
         expect(mockTableService.createTableIfNotExists).toHaveBeenCalled();
 
     });
@@ -153,7 +153,7 @@ describe('initialisation tests: ', function() {
         it('should not clean up sessions', function() {
             
             var options = { storageAccount: 'account', accessKey: 'key'};
-            var store = AzureTablesStoreFactory.create(options);
+            var store = new AzureTablesStore(options);
             spyOn(store, 'cleanUp');
             clock.tick(61000);
             expect(store.cleanUp).not.toHaveBeenCalled();
@@ -167,7 +167,7 @@ describe('initialisation tests: ', function() {
                 sessionTimeOut: 30
             };
 
-            var store = AzureTablesStoreFactory.create(options);
+            var store = new AzureTablesStore(options);
             spyOn(store, 'cleanUp').and.callThrough();
             expect(store.cleanUp).not.toHaveBeenCalled();
             clock.tick(61000);
@@ -183,7 +183,7 @@ describe('initialisation tests: ', function() {
                 overrideCron: '*/12 * * * * *'
             };
 
-            var store = AzureTablesStoreFactory.create(options);
+            var store = new AzureTablesStore(options);
             spyOn(store, 'cleanUp').and.callThrough();
             expect(store.cleanUp).not.toHaveBeenCalled();
             clock.tick(13000);
@@ -193,7 +193,7 @@ describe('initialisation tests: ', function() {
         it('should clean up sessions on first set only', function() {
 
             var options = { storageAccount: 'account', accessKey: 'key' };
-            var store = AzureTablesStoreFactory.create(options);
+            var store = new AzureTablesStore(options);
             spyOn(store, 'cleanUp');
             clock.tick(61000);
             expect(store.cleanUp).not.toHaveBeenCalled();
@@ -234,7 +234,7 @@ describe('session clean up tests', function() {
             logger: mockLogger.log
         };
 
-        var store = AzureTablesStoreFactory.create(options);
+        var store = new AzureTablesStore(options);
         store.cleanUp();
         expect(mockTableService.queryEntities.calls.count()).toEqual(1);
         expect(mockLogger.log.calls.count()).toEqual(2);
@@ -264,7 +264,7 @@ describe('session clean up tests', function() {
             errorLogger: mockLogger.log
         };
 
-        var store = AzureTablesStoreFactory.create(options);
+        var store = new AzureTablesStore(options);
         store.cleanUp();
         expect(mockTableService.queryEntities.calls.count()).toEqual(1);
         expect(mockLogger.log.calls.count()).toEqual(1);
@@ -298,7 +298,7 @@ describe('session clean up tests', function() {
             cb(error, 0);
         });
 
-        var store = AzureTablesStoreFactory.create(options);
+        var store = new AzureTablesStore(options);
         store.cleanUp();
         expect(mockTableService.queryEntities.calls.count()).toEqual(1);
         expect(mockLogger.log.calls.count()).toEqual(2);
@@ -333,7 +333,7 @@ describe('session clean up tests', function() {
             cb(error, 0);
         });
 
-        var store = AzureTablesStoreFactory.create(options);
+        var store = new AzureTablesStore(options);
         store.cleanUp();
         expect(mockTableService.queryEntities.calls.count()).toEqual(1);
         expect(mockLogger.log.calls.count()).toEqual(2);
@@ -365,7 +365,7 @@ describe('session clean up tests', function() {
             cb(null, 'delete result');
         });
 
-        var store = AzureTablesStoreFactory.create(options);
+        var store = new AzureTablesStore(options);
         store.cleanUp();
         expect(mockTableService.queryEntities.calls.count()).toEqual(1);
         expect(mockLogger.log.calls.count()).toEqual(5);
@@ -393,7 +393,7 @@ describe('session clean up tests', function() {
             cb(null, 'delete result');
         });
 
-        var store = AzureTablesStoreFactory.create(options);
+        var store = new AzureTablesStore(options);
         store.cleanUp();
         expect(mockTableService.queryEntities.calls.count()).toEqual(1);
         expect(mockLogger.log.calls.count()).toEqual(5);
@@ -429,7 +429,7 @@ describe('session clean up tests', function() {
             cb(null, 'delete result');
         });
 
-        var store = AzureTablesStoreFactory.create(options);
+        var store = new AzureTablesStore(options);
         store.cleanUp();
         expect(mockTableService.queryEntities.calls.count()).toEqual(2);
         expect(mockLogger.log.calls.count()).toEqual(8);
@@ -448,7 +448,7 @@ describe('destroy tests: ', function() {
     beforeEach(function() {
 
         var options = { storageAccount: 'account', accessKey: 'key', table: 'table' };
-        azureTablesStore = AzureTablesStoreFactory.create(options);
+        azureTablesStore = new AzureTablesStore(options);
         spyOn(handler, 'callBack');
 
    });
@@ -511,7 +511,7 @@ describe('get tests: ', function() {
     beforeEach(function() {
 
         var options = { storageAccount: 'account', accessKey: 'key', table: 'table' };
-        azureTablesStore = AzureTablesStoreFactory.create(options);
+        azureTablesStore = new AzureTablesStore(options);
         spyOn(handler, 'callBack');
 
     });
@@ -592,7 +592,7 @@ describe('set tests: ', function() {
     beforeEach(function() {
 
         var options = { storageAccount: 'account', accessKey: 'key', table: 'table' };
-        azureTablesStore = AzureTablesStoreFactory.create(options);
+        azureTablesStore = new AzureTablesStore(options);
         spyOn(handler, 'callBack');
 
     });
@@ -656,7 +656,7 @@ describe('touch tests with no maxAge or sessionTimeout: ', function() {
     beforeEach(function() {
 
         var options = { storageAccount: 'account', accessKey: 'key', table: 'table' };
-        azureTablesStore = AzureTablesStoreFactory.create(options);
+        azureTablesStore = new AzureTablesStore(options);
         spyOn(handler, 'callBack');
 
     });
@@ -720,7 +720,7 @@ describe('touch tests with sessionTimeout or maxAge: ', function() {
         var session = { value: 'session value', cookie: {} };
         var entity = { PartitionKey: sid, RowKey: sid, data: JSON.stringify(session)};
         var options = { storageAccount: 'account', accessKey: 'key', table: 'table', sessionTimeOut: timeOut/60000 };
-        azureTablesStore = AzureTablesStoreFactory.create(options);
+        azureTablesStore = new AzureTablesStore(options);
         spyOn(handler, 'callBack');
 
         mockTableService.insertOrReplaceEntity = function(table, session, cb) {
@@ -744,7 +744,7 @@ describe('touch tests with sessionTimeout or maxAge: ', function() {
         var session = { value: 'session value', cookie: {originalMaxAge: timeOut} };
         var entity = { PartitionKey: sid, RowKey: sid, data: JSON.stringify(session)};
         var options = { storageAccount: 'account', accessKey: 'key', table: 'table'};
-        azureTablesStore = AzureTablesStoreFactory.create(options);
+        azureTablesStore = new AzureTablesStore(options);
         spyOn(handler, 'callBack');
 
         mockTableService.insertOrReplaceEntity = function(table, session, cb) {
@@ -767,7 +767,7 @@ describe('touch tests with sessionTimeout or maxAge: ', function() {
         var session = { value: 'session value', cookie: {originalMaxAge: 60000} };
         var entity = { PartitionKey: sid, RowKey: sid, data: JSON.stringify(session)};
         var options = { storageAccount: 'account', accessKey: 'key', table: 'table', sessionTimeOut: 2};
-        azureTablesStore = AzureTablesStoreFactory.create(options);
+        azureTablesStore = new AzureTablesStore(options);
         spyOn(handler, 'callBack');
 
         mockTableService.insertOrReplaceEntity = function(table, session, cb) {
@@ -804,7 +804,7 @@ describe('logging tests', function() {
 
             var options = { storageAccount: 'account', accessKey: 'key', logger: logger.logFn };
             spyOn(mockTableService, 'createTableIfNotExists').and.callThrough();
-            AzureTablesStoreFactory.create(options);
+            new AzureTablesStore(options);
             expect(logger.logFn).toHaveBeenCalled();
             expect(mockTableService.createTableIfNotExists).toHaveBeenCalled();
             expect(mockTableService.createTableIfNotExists.calls.argsFor(0)[0]).toEqual('ConnectAzureTablesSessions');
@@ -815,7 +815,7 @@ describe('logging tests', function() {
 
             var options = { storageAccount: 'account', accessKey: 'key', table: 'test table', logger: logger.logFn };
             spyOn(mockTableService, 'createTableIfNotExists').and.callThrough();
-            AzureTablesStoreFactory.create(options);
+            new AzureTablesStore(options);
             expect(mockTableService.createTableIfNotExists).toHaveBeenCalled();
             expect(mockTableService.createTableIfNotExists.calls.argsFor(0)[0]).toEqual('test table');
             expect(logger.logFn.calls.argsFor(0)[0].indexOf('test table') >= 0).toBe(true);
@@ -833,7 +833,7 @@ describe('logging tests', function() {
         beforeEach(function() {
 
             var options = { storageAccount: 'account', accessKey: 'key', table: 'table', logger: logger.logFn };
-            azureTablesStore = AzureTablesStoreFactory.create(options);
+            azureTablesStore = new AzureTablesStore(options);
             spyOn(handler, 'callBack');
 
         });
@@ -862,7 +862,7 @@ describe('logging tests', function() {
         beforeEach(function() {
 
             var options = { storageAccount: 'account', accessKey: 'key', table: 'table', logger: logger.logFn };
-            azureTablesStore = AzureTablesStoreFactory.create(options);
+            azureTablesStore = new AzureTablesStore(options);
             spyOn(handler, 'callBack');
 
         });
@@ -893,7 +893,7 @@ describe('logging tests', function() {
         beforeEach(function() {
 
             var options = { storageAccount: 'account', accessKey: 'key', table: 'table', logger: logger.logFn };
-            azureTablesStore = AzureTablesStoreFactory.create(options);
+            azureTablesStore = new AzureTablesStore(options);
             spyOn(handler, 'callBack');
 
         });
@@ -925,7 +925,7 @@ describe('logging tests', function() {
         beforeEach(function() {
 
             var options = { storageAccount: 'account', accessKey: 'key', table: 'table', logger: logger.logFn };
-            azureTablesStore = AzureTablesStoreFactory.create(options);
+            azureTablesStore = new AzureTablesStore(options);
             spyOn(handler, 'callBack');
 
         });
